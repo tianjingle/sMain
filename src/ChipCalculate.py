@@ -82,6 +82,7 @@ class ChipCalculate:
                 csdnTemp.append(1)
             else:
                 csdnTemp.append(0)
+            csdnTemp.append(maxVolprice/100)
             result.append(csdnTemp)
         return result
 

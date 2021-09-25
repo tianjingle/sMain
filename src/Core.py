@@ -477,6 +477,7 @@ class Core:
 
         x=[]
         p=[]
+        top=[]
         priceBigvolPriceIndexs=[]
         resultEnd.sort(key=lambda resultEnd: resultEnd[0])
         resultEndLength=len(resultEnd)
@@ -489,6 +490,7 @@ class Core:
             x.append(resultEnd[i][0])
             string=string+","+str(resultEnd[i][1])
             p.append(resultEnd[i][1])
+            top.append(resultEnd[i][5])
             if i==resultEndLength-1:
                 self.priceJJJ=resultEnd[i][1]
             if resultEnd[i][4]==1:
@@ -533,6 +535,7 @@ class Core:
         #print("平均成本移动")
         #print(tianjingle)
         ax1.plot(x, p, c='orange',linewidth=2, label='移动成本')
+        ax1.plot(x, top, c='r',linewidth=1, label='筹码峰')
 
         #线性回归展示
         wangX=[]
