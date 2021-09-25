@@ -273,9 +273,11 @@ class Core:
         while (rs.error_code == '0') & rs.next():
             data_list.append(rs.get_row_data())
         self.result = pd.DataFrame(data_list, columns=rs.fields)
+        # print(self.result)
         self.start = len(self.result) - self.window
         # 二维数组
         self.result = self.result.loc[:, ['date', 'open', 'high', 'low', 'close', 'volume', 'turn']]
+        # print(self.result)
         if code == 'sh.000001':
             self.result['temp'] = 1000
             self.result['open'] = talib.DIV(self.result['open'], self.result['temp'])
