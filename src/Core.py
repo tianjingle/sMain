@@ -308,6 +308,22 @@ class Core:
         self.result['VAR10']=10
         self.result['VAR0']=0
 
+        #---------------------------动力-----开始
+        self.result['VAR_4']=4
+        # VAR2 := LLV(LOW, 10);
+        self.result['VAR2_dongli']=self.result['low'].rolling(10).min().astype(float)
+        # VAR3 := HHV(HIGH, 25);
+        self.result['VAR3_dongli']=self.result['high'].rolling(25).max().astype(float)
+        # 动力线 := EMA((CLOSE - VAR2) / (VAR3 - VAR2) * 4, 4);
+        self.result['CLOSE_VAR2']=self.result['close'].astype(float)-self.result['VAR2_dongli'].astype(float)
+        self.result['VAR3_VAR2']=self.result['VAR3_dongli'].astype(float)-self.result['VAR2_dongli'].astype(float)
+        self.result['CLOSE_VAR2_VAR3_VAR2X4'] = talib.DIV(self.result['CLOSE_VAR2'], self.result['VAR3_VAR2'])
+        self.result['dongliTTTT']=talib.MULT(self.result['CLOSE_VAR2_VAR3_VAR2X4'], self.result['VAR_4'])
+        self.result['DONGLILINE'] = talib.EMA(self.result['dongliTTTT'], 4)
+        # ---------------------------动力-----结束
+
+
+
         #主力散户吸筹
         # VAR2:=REF(LOW,1);      前一日的最低价
         self.result['VAR2'] = self.result['low']
@@ -505,8 +521,6 @@ class Core:
         for item in tianjingle:
             kX = item[0]
             kk = item[1]
-            if kk>0 and len(y1)>3 and y1[len(y1)-1]>kk and y1[len(y1)-2]>y1[len(y1)-3]:
-                ax3.axvline(kX + mystart, ls='-', c='r', lw=2)
             if kk>0 and len(y1)>2 and y1[len(y1)-1]<0:
                 ax1.axvline(kX + mystart, ls='-', c='orange',ymin=0.5,ymax=0.7, lw=2)
             if kk<0 and len(y1)>2 and y1[len(y1)-1]>0:
@@ -516,7 +530,7 @@ class Core:
             y1.append(kk)
         pingjunchengbendic = dict(zip(x1, y1))
         #一节导数
-        ax3.plot(x1, y1, color="orange", linewidth=1, label='一阶导数')
+        # ax3.plot(x1, y1, color="orange", linewidth=1, label='一阶导数')
 
         # choumaerJieTidu=everyErChengPriceForArray(np.array(x1),np.array(y1),myyj)
 
@@ -564,7 +578,6 @@ class Core:
             kk1=item[1]
             wangXSlow.append(kX1)
             wangYSlow.append(kk1)
-        ax3.axhline(0,ls='-', c='g', lw=0.5)
 
 
         yijieSlowdict=dict(zip(wangXSlow,wangYSlow))
@@ -614,7 +627,7 @@ class Core:
                         newTonTemp.append(1)
                         # 1表示吸筹买入
                         newTonTemp.append("XC-MR")
-                        newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">🌈🌈🌈买入：此处应该吸筹买入，当下筹码集中，获利股东大于50%，此时的股票基本处于底部，未来爆发的潜力很大。<font color='red'>但是也不排除此刻是底部的相对高位，您可以在此刻买入1手，一般情况下，股价会有回调,暴涨之后这里不建议买入。/font></b>")
+                        newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入</font></b>")
                         NewtonBuySall.append(newTonTemp)
                         ax1.axvline(currentx, ls='-', c='g', lw=5,ymin=0,ymax=0.02)
                     # ax2.axvline(currentx, ls='-',color="g", lw=2)
@@ -628,25 +641,27 @@ class Core:
                 continue
             #一阶导数大于0，二阶导数大于0，一阶导数大于二阶导数，二阶导数递减
             if oldTwok>0 and oldOne>0 and oldTwok>=oldOne and onek>0 and onek<twok:
+                a=0
                 #添加历史回测里
                 newTonTemp = []
                 newTonTemp.append(currentx)
                 newTonTemp.append(-1)
                 #高位清仓
                 newTonTemp.append("DDQC-MC")
-                newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">⛈⛈⛈卖出：此处可能是潜在的历史高位，应该卖出，<font color='red'>但股价趋势向上，而且移动平均成本与当前价位差别较小，就应该继续持股等待。</font></b>")
+                newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">卖出</font></b>")
                 NewtonBuySall.append(newTonTemp)
                 ax1.axvline(currentx,ls='-', c='r',ymin=1, ymax=0.95, lw=2)
                 # ax2.axvline(currentx, color="r", ls='-',lw=1)
             if oldOne>0 and onek>0 and oldOne>onek and oldTwok>oldOne and onek>twok:
+                a=1
                 #添加历史回测里
-                newTonTemp = []
-                newTonTemp.append(currentx)
-                newTonTemp.append(-1)
-                newTonTemp.append("XDDQC-MC")
-                newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">⛈⛈⛈卖出：待验证的顶点判断：此处可能是潜在的历史高位<，应该卖出，<font color='red'>但股价趋势向上，而且移动平均成本与当前价位差别较小，就应该继续持股等待。</font></b>")
-                NewtonBuySall.append(newTonTemp)
-                ax1.axvline(currentx,ls='-', c='r',ymin=1, ymax=0.95, lw=2)
+                # newTonTemp = []
+                # newTonTemp.append(currentx)
+                # newTonTemp.append(-1)
+                # newTonTemp.append("XDDQC-MC")
+                # newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">⛈⛈⛈卖出：待验证的顶点判断：此处可能是潜在的历史高位<，应该卖出，<font color='red'>但股价趋势向上，而且移动平均成本与当前价位差别较小，就应该继续持股等待。</font></b>")
+                # NewtonBuySall.append(newTonTemp)
+                # ax1.axvline(currentx,ls='-', c='r',ymin=1, ymax=0.95, lw=2)
                 # ax2.axvline(currentx, color="r", ls='-',lw=1)
             # if  onek>0 and oldOne<0:
             #     #添加历史回测里
@@ -669,12 +684,13 @@ class Core:
                 # NewtonBuySall.append(newTonTemp)
                 # ax1.axvline(currentx,ls='-', c='g', lw=2)
             elif onek <= 0 and twok > onek and oldTwok < oldOne and downParent > self.downlimit and twok>0:
+                a=0
                 # newTonTemp = []
                 # newTonTemp.append(currentx)
                 # newTonTemp.append(1)
                 # NewtonBuySall.append(newTonTemp)
-                ax2.axvline(currentx, color="#5EA26B", ls='-',lw=1)
-                ax1.axvline(currentx,ls='-', c='#5EA26B', lw=0.5)
+                # ax2.axvline(currentx, color="#5EA26B", ls='-',lw=1)
+                # ax1.axvline(currentx,ls='-', c='#5EA26B', lw=0.5)
             # elif onek <= 0 and twok > onek and oldTwok < oldOne and downParent > self.downlimit and twok<0:
                 # newTonTemp = []
                 # newTonTemp.append(currentx)
@@ -723,27 +739,28 @@ class Core:
 
 
             if len(newYY)>3 and currentOneTwoValue>0 and currentOneTwoValue<newYY[len(newYY)-2] and newYY[len(newYY)-2] >newYY[len(newYY)-3]:
+                A=1
                 #添加到历史回测里
-                newTonTemp = []
-                newTonTemp.append(kX)
-                newTonTemp.append(-1)
-                newTonTemp.append("GAOWEIDAOSHU")
-                newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">卖出，阶段性高位，继续上涨空间较小，可参考导数趋势，建议卖出，否贼会有亏损！</b>")
-                NewtonBuySall.append(newTonTemp)
+                # newTonTemp = []
+                # newTonTemp.append(kX)
+                # newTonTemp.append(-1)
+                # newTonTemp.append("GAOWEIDAOSHU")
+                # newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">卖出，阶段性高位，继续上涨空间较小，可参考导数趋势，建议卖出，否贼会有亏损！</b>")
+                # NewtonBuySall.append(newTonTemp)
 
                 # ax2.axvline(kX, color="r", ls='-',lw=0.2)
-                ax1.axvline(kX,ls='-', c='r',ymin=1,ymax=0.8, lw=2)
+                # ax1.axvline(kX,ls='-', c='r',ymin=1,ymax=0.8, lw=2)
 
-            if len(newYY)>3 and currentOneTwoValue<0 and currentOneTwoValue>newYY[len(newYY)-2] and newYY[len(newYY)-2] <newYY[len(newYY)-3] and currentOneTwoValue<kk and kk<olddictvalue:
-                #添加到历史回测里
-                newTonTemp = []
-                newTonTemp.append(kX)
-                newTonTemp.append(1)
-                newTonTemp.append("DIWEIDAOSHU")
-                newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入，但是二阶导数的形态和空间要足够，还有高位的要注意，最好不要操作！</b>")
-                NewtonBuySall.append(newTonTemp)
-                # ax2.axvline(kX, color="g", ls='-',lw=2)
-                ax1.axvline(kX,ls='-', c='g',ymax=0.05,ymin=0, lw=2)
+            # if len(newYY)>3 and currentOneTwoValue<0 and currentOneTwoValue>newYY[len(newYY)-2] and newYY[len(newYY)-2] <newYY[len(newYY)-3] and currentOneTwoValue<kk and kk<olddictvalue:
+            #     #添加到历史回测里
+            #     newTonTemp = []
+            #     newTonTemp.append(kX)
+            #     newTonTemp.append(1)
+            #     newTonTemp.append("DIWEIDAOSHU")
+            #     newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入，但是二阶导数的形态和空间要足够，还有高位的要注意，最好不要操作！</b>")
+            #     NewtonBuySall.append(newTonTemp)
+            #     # ax2.axvline(kX, color="g", ls='-',lw=2)
+            #     ax1.axvline(kX,ls='-', c='g',ymax=0.05,ymin=0, lw=2)
 
             # ax2.scatter(kX, float(kk)+float(olddictvalue), color="r", linewidth=0.0004)
             #总导数小于零，总导数趋势向上，总导数大于界限 and yestodayOneTwoValue<currentOneTwoValue and currentOneTwoValue>tianLien
@@ -754,7 +771,7 @@ class Core:
                     newTonTemp.append(kX)
                     newTonTemp.append(1)
                     newTonTemp.append("CHAODI-MR")
-                    newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">🏍🏍买入：短期内股价处于底部，未来有一定的上涨反弹空间，您可以在此买入，几天之后再卖出，前提明日股价高于今日，但是涨幅不能很大！，前提是今日不能大涨，明日不能大涨。\n<font color='red'>但是：如果当前一阶导数和二阶导数在0轴附近纠缠不清，而且股价趋势向下，那么此刻的反弹很有可能是庄家的欺骗行为！应该当避而远之！！！、如果明日股价低于今日股价，一定不要买入！。如果明日股价张福过大，按照均衡原理，买入很可能回调，请慎重！</font></b>")
+                    newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入</font></b>")
                     NewtonBuySall.append(newTonTemp)
                     ax2.axvline(kX, ls='-', c="g",lw=2)
                     ax1.axvline(kX,ls='-', c='g',ymin=0, ymax=0.1, lw=6)
@@ -790,17 +807,17 @@ class Core:
                     # newTonTemp.append(1)
                     # NewtonBuySall.append(newTonTemp)
             #二阶下穿越
-            if kk<=0 and oldKK>0:
-                #卖出
-                newTonTemp = []
-                newTonTemp.append(kX)
-                newTonTemp.append(-1)
-                newTonTemp.append("EJXC-MC")
-                newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">⛈⛈⛈卖出：明日应该卖出，股价上行动力不足，今后几天可能会有一定程度的回调！</b>")
-                NewtonBuySall.append(newTonTemp)
-                ax1.axvline(kX, ls='-', c='y',ymin=1, ymax=0.8, lw=2)
-                # ax2.axvline(kX, color="y", ls='-',lw=1)
-                item[2] = -1
+            # if kk<=0 and oldKK>0:
+            #     #卖出
+            #     newTonTemp = []
+            #     newTonTemp.append(kX)
+            #     newTonTemp.append(-1)
+            #     newTonTemp.append("EJXC-MC")
+            #     newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">⛈⛈⛈卖出：明日应该卖出，股价上行动力不足，今后几天可能会有一定程度的回调！</b>")
+            #     NewtonBuySall.append(newTonTemp)
+            #     ax1.axvline(kX, ls='-', c='y',ymin=1, ymax=0.8, lw=2)
+            #     # ax2.axvline(kX, color="y", ls='-',lw=1)
+            #     item[2] = -1
 
             old2=item[2]
             oldKK=kk
@@ -855,16 +872,77 @@ class Core:
         for i in range(len(VARXCX)):
             newTonTemp = []
             newTonTemp.append(VARXCX[i])
-            newTonTemp.append(0)
+            newTonTemp.append(1)
             newTonTemp.append("XC-MR")
-            newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入，此处为通达信吸筹买入点，但是一般会连续出现，如果没有其他买入点（小绿线，反弹线，粗短绿线）您可以最后出现后买入，或参考导数图！</b>")
+            newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入，通达信吸筹买入点，但是一般会连续出现</b>")
             NewtonBuySall.append(newTonTemp)
             ax1.axvline(VARXCX[i], ls='-', c='orange',ymax=0.02,ymin=0, lw=2)
+
+        x=[]
+        y=[]
+        for index, row in self.result.iterrows():
+            x.append(index-self.start)
+            a = round(row['DONGLILINE'], 2)
+            y.append(float(a))
+
+        for i in range(len(x)):
+            if i < len(x) and i > 1:
+                if y[i] >= 0.2 and y[i - 1] < 0.2 and y[i - 1] != 0:
+                    ax3.axvline(x[i], ls='-', c='red', ymin=0, ymax=0.2, lw=5)
+                    ax1.axvline(x[i], ls='-', c='red', ymin=0, ymax=0.2, lw=5)
+                    newTonTemp = []
+                    newTonTemp.append(x[i])
+                    newTonTemp.append(1)
+                    newTonTemp.append("XC-MR")
+                    newTonTemp.append(
+                        "<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入</b>")
+                    NewtonBuySall.append(newTonTemp)
+                if y[i] > 0.5 and y[i - 1] <= 0.5 and y[i - 1] != 0:
+                    ax3.axvline(x[i], ls='-', c='#f47920', ymin=0, ymax=0.1, lw=5)
+                    ax1.axvline(x[i], ls='-', c='#f47920', ymin=0, ymax=0.1, lw=5)
+                    newTonTemp = []
+                    newTonTemp.append(x[i])
+                    newTonTemp.append(1)
+                    newTonTemp.append("XC-MR")
+                    newTonTemp.append(
+                        "<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">关注买入</b>")
+                    NewtonBuySall.append(newTonTemp)
+                if y[i] >= 3.2 and y[i - 1] < 3.2:
+                    ax3.axvline(x[i], ls='-', c='b', ymin=1, ymax=0.9, lw=5)
+                    ax1.axvline(x[i], ls='-', c='b', ymin=1, ymax=0.9, lw=5)
+                    newTonTemp = []
+                    newTonTemp.append(x[i])
+                    newTonTemp.append(-1)
+                    newTonTemp.append("DONGLI-MC")
+                    newTonTemp.append(
+                        "<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">关注卖出</b>")
+                    NewtonBuySall.append(newTonTemp)
+                if y[i] < 3.5 and y[i - 1] >= 3.5:
+                    ax3.axvline(x[i], ls='-', c='white', ymin=1, ymax=0.8, lw=5)
+                    ax1.axvline(x[i], ls='-', c='white', ymin=1, ymax=0.8, lw=5)
+                    newTonTemp = []
+                    newTonTemp.append(x[i])
+                    newTonTemp.append(-1)
+                    newTonTemp.append("DONGLI-MC")
+                    newTonTemp.append(
+                        "<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">清仓卖出</b>")
+                    NewtonBuySall.append(newTonTemp)
+
+        # self.ax4.axhline(0.2, ls='-.', c='red', lw=0.5)
+        ax3.axhline(0.5, ls='-.', c='#f47920', lw=0.5)
+        ax3.axhline(1.75, ls='-.', c='palegreen', lw=0.5)
+        ax3.axhline(3.2, ls='-.', c='b', lw=0.5)
+        # self.ax4.axhline(3.5, ls='-.', c='white', lw=0.5)
+        ax3.plot(x, y, c='pink', lw=0.5, label='aaaa')
+
 
         profit=self.testNewTon(NewtonBuySall,indexCloseDict)
         ax6.plot(self.buysell, self.myRmb, c='orange', label="回测收益率:"+str(round(profit,2))+"%")
         ax6.legend(loc='upper left')  # 图例放置于右上角
         ax6.grid(True)  # 画网格
+
+
+
 
         # 登出系统
         if isTest==0:
@@ -873,7 +951,7 @@ class Core:
             bs.logout()
         else:
             plt.close(fig)
-        # plt.show()
+        plt.show()
         return NewtonBuySall,profit,currentIndex
 
 
