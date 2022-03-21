@@ -27,6 +27,10 @@ from scipy.optimize import leastsq
 import time
 
 from src.ChipCalculate import ChipCalculate
+from src.MyWxPusher import MyWxPusher
+from src.Qsms import Qsms
+from src.Tencent import Tencent
+
 
 class Core:
     stackCode="sz.000918"
@@ -52,6 +56,7 @@ class Core:
     start=-1
     currentPrice=0
     startRmb=0
+    tencent=Tencent()
     def date_to_num(self,dates):
         num_time = []
         for date in dates:
@@ -277,9 +282,16 @@ class Core:
         self.start = len(self.result) - self.window
         # 二维数组
         self.result = self.result.loc[:, ['date', 'open', 'high', 'low', 'close', 'volume', 'turn']]
+
+        if self.couldTencent()==1 and code!='sh.000001':
+            now=self.tencent.getCurrentStockInfo(code)
+            tian=[{'date':endDate,'open':now['open'],'high':now['high'],'low':now['low'],'close':now['now'],'volume':now['volume'],'turn':now['turnover']}]
+            self.result = self.result.append(tian, ignore_index=True)
+
+
         # print(self.result)
         if code == 'sh.000001':
-            self.result['temp'] = 1000
+            self.result['temp'] = 100
             self.result['open'] = talib.DIV(self.result['open'], self.result['temp'])
             self.result['high'] = talib.DIV(self.result['high'], self.result['temp'])
             self.result['low'] = talib.DIV(self.result['low'], self.result['temp'])
@@ -372,12 +384,20 @@ class Core:
         #print(self.result[['low','VAR4','VAR5','VAR6','VAR7','VAR8','VAR9','VARXC']])
         return self.result,self.start
 
-
-
-
-
-
-
+    #是否走腾讯数据
+    def couldTencent(self):
+        # 范围时间
+        start_time = datetime.datetime.strptime(str(datetime.datetime.now().date()) + '9:30', '%Y-%m-%d%H:%M')
+        # 开始时间
+        end_time = datetime.datetime.strptime(str(datetime.datetime.now().date()) + '17:35', '%Y-%m-%d%H:%M')
+        # 结束时间
+        # 当前时间
+        now_time = datetime.datetime.now()
+        # 方法一：
+        # 判断当前时间是否在范围时间内
+        if start_time < now_time < end_time:
+            return 1
+        return 0
 
     def execute(self,code,mywidth,mylength,isTest):
         self.init()
@@ -389,7 +409,6 @@ class Core:
         # date_tickers=result.date.values
         self.result.date = range(0, len(self.result))  # 日期改变成序号
         matix = self.result.values  # 转换成绘制蜡烛图需要的数据格式(date, open, close, high, low, volume)
-
 
         self.current=self.result[-1:]
         #逐个计算最近7天的趋势
@@ -784,11 +803,8 @@ class Core:
             #                   $
             if olddictvalue>0 and olddictvalue>yestodayOneValue and currentOneTwoValue>yestodayOneTwoValue \
                     and yestodayOneValue>yestodayOneTwoValue and olddictvalue>currentOneTwoValue and threeOneValue<olddictvalue and kk>olddictvalue:
-                newTonTemp = []
-                newTonTemp.append(kX)
-                newTonTemp.append(1)
-                newTonTemp.append("CHANGNUI-MR")
-                newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">🚄买入：股价长期向好，此刻应该买入，未来可能具有快速拉伸的前景，前提是之前没有筹码积压，30天内没有前高。<font color='red'>但是：如果股价处于高位，那么此刻指标失效，您应当避而远之！！！</font></b>")
+                newTonTemp = [kX, 1, "CHANGNUI-MR",
+                              "<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">🚄买入：股价长期向好，此刻应该买入，未来可能具有快速拉伸的前景，前提是之前没有筹码积压，30天内没有前高。<font color='red'>但是：如果股价处于高位，那么此刻指标失效，您应当避而远之！！！</font></b>"]
                 NewtonBuySall.append(newTonTemp)
                 # ax2.scatter(kX, twok, color="g", linewidth=0.0004)
                 ax1.axvline(kX, ls='-', c='g', ymin=0, ymax=0.3, lw=3)
@@ -946,23 +962,26 @@ class Core:
 
         # 登出系统
         if isTest==0:
-            tempDir = os.getcwd() + "/temp/"
+            tempDir="C:\\Users\\tianjingle\\PycharmProjects\\sMain\src\\temp\\"
+            # tempDir = os.getcwd() + "/temp/"
             plt.savefig(tempDir+ code + ".png")
             bs.logout()
         else:
             plt.close(fig)
-        plt.show()
+        # plt.show()
         return NewtonBuySall,profit,currentIndex
 
 
     def start(self,codes):
+
         imgsOKstr=""
         imgsOK=[]
         oldTotal=0
         currentTotal=0
+        myWxPusher=MyWxPusher()
+        myBuy=[]
+        mySell=[]
         for items in codes:
-
-
             item=items[0]
             self.start = -1
             NewtonBuySall,profit,currentIndex=self.execute(item,int(items[4]),int(items[5]),0)
@@ -974,13 +993,32 @@ class Core:
             zhidao=""
             isToday=False
             caozuoHistory=sorted(NewtonBuySall, key=lambda x: x[0], reverse=True)
+            flag=-1
             for mmzd in caozuoHistory[:3]:
                 if mmzd[0]>currentIndex:
                     zhidaoToday=mmzd[3]
+                    flag=mmzd[1]
                     isToday=True
+                    if self.couldTencent() == 1:
+                        if flag > 0:
+                            operation = "买"
+                            myBuy.append(item[3])
+                        else:
+                            operation = "卖"
+                            mySell.append(item[3])
+                        Qsms().sendSms(None, items[3], "", operation)
                 if isToday==False and mmzd[0]==currentIndex:
                     zhidaoToday=mmzd[3]
+                    flag = mmzd[1]
                     isToday=True
+                    if self.couldTencent() == 1:
+                        if flag > 0:
+                            myBuy.append(item[3])
+                            operation = "买"
+                        else:
+                            mySell.append(item[3])
+                            operation = "卖"
+                        Qsms().sendSms(None, items[3],"", operation)
                 else:
                     temp=mmzd[3]
                     temp=temp.replace("b","span")
@@ -1009,7 +1047,10 @@ class Core:
             # print("\033[1;33;40m \t"+items[0]+","+items[3]+"\tok         \033[0m")
             print("\t"+items[0]+","+items[3]+"\tok         ")
 
-
+        myWxPusher.sendWxPusher(myBuy,mySell)
+        #时间内才发送
+        # if self.couldTencent()==1:
+        #     return
         endDate=time.strftime('%Y-%m-%d',time.localtime(time.time()))
         conf=Config()
         my_pass = conf.emailPass  # 发件人邮箱密码
@@ -1036,7 +1077,8 @@ class Core:
         msgAlternative.attach(MIMEText(mail_msg, 'html', 'utf-8'))
 
         # 指定图片为当前目录
-        cur_path = os.getcwd()
+        # cur_path = os.getcwd()
+        cur_path="C:\\Users\\tianjingle\\PycharmProjects\\sMain\\src"
         tempDir = cur_path + "/temp/"
         for item in imgsOK:
             fp = open(tempDir+item+".png", 'rb')

@@ -75,20 +75,22 @@ class sMain:
         # print("\033[1;32;40m 1.配置文件规整  \033[0m")
 
 
-if __name__ == '__main__':
-    cur_path = os.path.abspath(os.path.dirname(__file__))
-    tempDir=cur_path+"/temp/"
-    if os.path.exists(tempDir)==False:
-        os.makedirs(tempDir)
-    banner=Banner()
-    banner.bannerShow()
-    smain=sMain()
-    smain.train()
-    core=Core()
-    config=Config()
-    print("2.股票波段计算")
-    core.start(config.myStock)
-
+    def start(self):
+        # cur_path = os.path.abspath(os.path.dirname(__file__))
+        cur_path="C:\\Users\\tianjingle\\PycharmProjects\\sMain\src\\"
+        tempDir=cur_path+"/temp/"
+        if os.path.exists(tempDir)==False:
+            os.makedirs(tempDir)
+        banner=Banner()
+        banner.bannerShow()
+        smain=sMain()
+        smain.train()
+        core=Core()
+        config=Config()
+        print("2.股票波段计算")
+        core.start(config.myStock)
+s=sMain()
+s.start()
 
 
 
