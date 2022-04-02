@@ -6,6 +6,8 @@ from src.Core import Core
 
 import os
 
+from src.HangYe import HangYe
+
 
 class sMain:
 
@@ -89,6 +91,11 @@ class sMain:
         config=Config()
         print("2.股票波段计算")
         core.start(config.myStock)
+
+    def concept(self):
+        HangYe().scan()
+
+
 s=sMain()
 s.start()
 
