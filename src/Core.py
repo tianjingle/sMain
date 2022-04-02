@@ -27,12 +27,14 @@ from scipy.optimize import leastsq
 import time
 
 from src.ChipCalculate import ChipCalculate
+from src.Industry import Industry
 from src.MyWxPusher import MyWxPusher
 from src.Qsms import Qsms
 from src.Tencent import Tencent
 
 
 class Core:
+    industry=Industry()
     stackCode="sz.000918"
     isIndex=False
     window=80
@@ -265,32 +267,38 @@ class Core:
         resultEnd=calcualate.getDataByShowLine(chipCalculateList)
         return resultEnd
 
-    def getResult(self,code):
-        endDate = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-        lg = bs.login()
-        rs = bs.query_history_k_data_plus(code,
-                                          "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,isST",
-                                          start_date='2018-11-01', end_date=endDate,
-                                          frequency="d", adjustflag="2")
-
+    def getResult(self,code,stock=True):
         #### 打印结果集 ####
         data_list = []
-        while (rs.error_code == '0') & rs.next():
-            data_list.append(rs.get_row_data())
-        self.result = pd.DataFrame(data_list, columns=rs.fields)
-        # print(self.result)
+        endDate = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+        if stock:
+            lg = bs.login()
+            rs = bs.query_history_k_data_plus(code,
+                                              "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,isST",
+                                              start_date='2018-11-01', end_date=endDate,
+                                              frequency="d", adjustflag="2")
+            while (rs.error_code == '0') & rs.next():
+                data_list.append(rs.get_row_data())
+            self.result = pd.DataFrame(data_list, columns=rs.fields)
+            bs.logout()
+        else:
+            ttt=self.industry.get_bankuan_day_line(code)
+            self.result = ttt
+
+        if len(self.result)<50:
+            return pd.DataFrame(),-1
         self.start = len(self.result) - self.window
         # 二维数组
         self.result = self.result.loc[:, ['date', 'open', 'high', 'low', 'close', 'volume', 'turn']]
 
-        if self.couldTencent()==1 and code!='sh.000001':
+        if self.couldTencent()==1 and code!='sh.000001' and stock==True:
             now=self.tencent.getCurrentStockInfo(code)
             tian=[{'date':endDate,'open':now['open'],'high':now['high'],'low':now['low'],'close':now['now'],'volume':now['volume'],'turn':now['turnover']}]
             self.result = self.result.append(tian, ignore_index=True)
 
 
         # print(self.result)
-        if code == 'sh.000001':
+        if code == 'sh.000001' or stock==False:
             self.result['temp'] = 100
             self.result['open'] = talib.DIV(self.result['open'], self.result['temp'])
             self.result['high'] = talib.DIV(self.result['high'], self.result['temp'])
@@ -399,11 +407,13 @@ class Core:
             return 1
         return 0
 
-    def execute(self,code,mywidth,mylength,isTest):
+    def execute(self,code,mywidth,mylength,isTest,stock=True):
         self.init()
         if self.start==-1:
             #print("result is None...")
-            self.result, self.start=self.getResult(code)
+            self.result, self.start=self.getResult(code,stock)
+            if len(self.result)<100:
+                return None,None,None
 
         # 计算KDJ值，数据存于DataFrame中
         # date_tickers=result.date.values
@@ -962,10 +972,10 @@ class Core:
 
         # 登出系统
         if isTest==0:
-            tempDir="C:\\Users\\tianjingle\\PycharmProjects\\sMain\src\\temp\\"
+            tempDir="C:\\zMain-pic\\temp\\"
             # tempDir = os.getcwd() + "/temp/"
             plt.savefig(tempDir+ code + ".png")
-            bs.logout()
+
         else:
             plt.close(fig)
         # plt.show()
@@ -1002,10 +1012,10 @@ class Core:
                     if self.couldTencent() == 1:
                         if flag > 0:
                             operation = "买"
-                            myBuy.append(item[3])
+                            myBuy.append(items[3])
                         else:
                             operation = "卖"
-                            mySell.append(item[3])
+                            mySell.append(items[3])
                         Qsms().sendSms(None, items[3], "", operation)
                 if isToday==False and mmzd[0]==currentIndex:
                     zhidaoToday=mmzd[3]
@@ -1013,10 +1023,10 @@ class Core:
                     isToday=True
                     if self.couldTencent() == 1:
                         if flag > 0:
-                            myBuy.append(item[3])
+                            myBuy.append(items[3])
                             operation = "买"
                         else:
-                            mySell.append(item[3])
+                            mySell.append(items[3])
                             operation = "卖"
                         Qsms().sendSms(None, items[3],"", operation)
                 else:
@@ -1078,7 +1088,7 @@ class Core:
 
         # 指定图片为当前目录
         # cur_path = os.getcwd()
-        cur_path="C:\\Users\\tianjingle\\PycharmProjects\\sMain\\src"
+        cur_path="C:\zMain-pic"
         tempDir = cur_path + "/temp/"
         for item in imgsOK:
             fp = open(tempDir+item+".png", 'rb')
