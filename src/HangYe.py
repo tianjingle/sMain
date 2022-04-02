@@ -53,6 +53,6 @@ class HangYe:
         with open(self.BANKUAN_Buy_Sell_PATH) as f:
             return json.load(f)["buy"]
 
-HangYe().scan()
-buy=HangYe().getBuySellIndustry()
-print(buy)
+# HangYe().scan()
+# buy=HangYe().getBuySellIndustry()
+# print(buy)
