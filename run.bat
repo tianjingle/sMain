@@ -1,0 +1,1 @@
+python "C:\Users\Administrator\PycharmProjects\sMain\Run.py"
