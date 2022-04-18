@@ -249,6 +249,7 @@ class Core:
 
     def chipCalculate(self,result,start):
         chipCalculateList=[]
+        currentPrice=0
         #传入的数据id,open,high,low,close,volume,typePrice,turn
         #          0,   1,   2,  3,   4,    5,    6,       7
         for index, row in result.iterrows():
@@ -259,13 +260,15 @@ class Core:
             temp.append(row['high'])
             temp.append(row['low'])
             temp.append(row['close'])
+            currentPrice=float(row['close'])
             temp.append(row['volume'])
             temp.append(row['tprice'])
             temp.append(row['turn'])
+            temp.append(1)
             chipCalculateList.append(temp)
         calcualate=ChipCalculate()
         resultEnd=calcualate.getDataByShowLine(chipCalculateList)
-        return resultEnd
+        return resultEnd,currentPrice
 
     def getResult(self,code,stock=True):
         #### 打印结果集 ####
@@ -277,6 +280,7 @@ class Core:
                                               "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,isST",
                                               start_date='2018-11-01', end_date=endDate,
                                               frequency="d", adjustflag="2")
+            print(rs)
             while (rs.error_code == '0') & rs.next():
                 data_list.append(rs.get_row_data())
             self.result = pd.DataFrame(data_list, columns=rs.fields)
@@ -460,13 +464,14 @@ class Core:
         plt.rc('lines', lw=0.8)  # 全局线宽
         # 创建绘图对象和4个坐标轴
         fig = plt.figure(figsize=(16, 8))
-        left, width = 0.05, 0.9
+        left, width = 0.05, 0.8
         ax1 = fig.add_axes([left, 0.5, width, 0.48])  # left, bottom, width, height
         ax2 = fig.add_axes([left, 0.25, width, 0.24], sharex=ax1)  # 共享ax1轴
         ax3 = fig.add_axes([left, 0.15, width, 0.09], sharex=ax1)  # 共享ax1轴
         # ax4 = fig.add_axes([left, 0.15, width, 0.09], sharex=ax1)  # 共享ax1轴
         ax5 = fig.add_axes([left, 0.05, width, 0.09], sharex=ax1)  # 共享ax1轴
         ax6 = fig.add_axes([left, 0.01, width, 0.04], sharex=ax1)  # 共享ax1轴
+        cmx = fig.add_axes([0.85, 0.5, 0.15, 0.48], sharey=ax1)  # 共享ax1轴
         plt.setp(ax1.get_xticklabels(), visible=True)  # 使x轴刻度文本不可见，因为共享，不需要显示
         plt.setp(ax2.get_xticklabels(), visible=True)  # 使x轴刻度文本不可见，因为共享，不需要显示
         ax1.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date))  # 设置自定义x轴格式化日期函数
@@ -518,14 +523,20 @@ class Core:
             x1.append(currentIndex)
             y1.append(row['tprice'])
         #筹码计算
-        resultEnd=self.chipCalculate(self.result,self.start)
-
+        resultEnd,self.priceJJJ=self.chipCalculate(self.result,self.start)
+        choumaList = resultEnd[0][2]
+        TavcPrice = resultEnd[0][1]
+        print("avgprice:" + str(TavcPrice))
+        tmax = resultEnd[0][4]
+        print(tmax)
+        chouMalit = np.array(choumaList)
+        for item in chouMalit:
+            item[0] = item[0] * 1.0 / 100
+        cmx.barh(chouMalit[:, 0], chouMalit[:, 1], color="Turquoise", align="center", height=0.05)
+        cmx.barh(TavcPrice, tmax, color="red", height=0.05)
         x=[]
         p=[]
-        top=[]
         priceBigvolPriceIndexs=[]
-        resultEnd.sort(key=lambda resultEnd: resultEnd[0])
-        resultEndLength=len(resultEnd)
         string=""
         mystart=0
         bigVolPrice={}
@@ -535,9 +546,6 @@ class Core:
             x.append(resultEnd[i][0])
             string=string+","+str(resultEnd[i][1])
             p.append(resultEnd[i][1])
-            top.append(resultEnd[i][5])
-            if i==resultEndLength-1:
-                self.priceJJJ=resultEnd[i][1]
             if resultEnd[i][4]==1:
                 priceBigvolPriceIndexs.append(resultEnd[i][0])
                 bigVolPrice[resultEnd[i][0]]=1
@@ -550,12 +558,8 @@ class Core:
         for item in tianjingle:
             kX = item[0]
             kk = item[1]
-            if kk>0 and len(y1)>2 and y1[len(y1)-1]<0:
-                ax1.axvline(kX + mystart, ls='-', c='orange',ymin=0.5,ymax=0.7, lw=2)
-            if kk<0 and len(y1)>2 and y1[len(y1)-1]>0:
-                ax1.axvline(kX + mystart, ls='-', c='b',ymin=0.4,ymax=0.6, lw=2)
 
-            x1.append(kX+mystart)
+            x1.append(kX+myyj)
             y1.append(kk)
         pingjunchengbendic = dict(zip(x1, y1))
         #一节导数
@@ -578,7 +582,6 @@ class Core:
         #print("平均成本移动")
         #print(tianjingle)
         ax1.plot(x, p, c='orange',linewidth=2, label='移动成本')
-        ax1.plot(x, top, c='r',linewidth=1, label='筹码峰')
 
         #线性回归展示
         wangX=[]
@@ -860,6 +863,7 @@ class Core:
         fList=[]
 
         zsm={}
+        fListMap={}
         for index, row in self.result.iterrows():
             iList.append(index-self.start)
             z=float(row['z'])
@@ -869,6 +873,7 @@ class Core:
             convert=int(row['m'])
             if convert==1:
                 fList.append(index-self.start)
+                fListMap[index-self.start]=1
             if z>s and convert==1:
                 zsm[index-self.start]=1
 
@@ -914,22 +919,33 @@ class Core:
         for i in range(len(x)):
             if i < len(x) and i > 1:
                 if y[i] >= 0.2 and y[i - 1] < 0.2 and y[i - 1] != 0:
-                    ax3.axvline(x[i], ls='-', c='red', ymin=0, ymax=0.2, lw=5)
-                    ax1.axvline(x[i], ls='-', c='red', ymin=0, ymax=0.2, lw=5)
+                    hight = 0.2
+                    type = "DONGLI-MR"
+                    if fListMap.__contains__(x[i]):
+                        hight = 0.4
+                        type = "DONGLE-FZ-MR"
+                    ax3.axvline(x[i], ls='-', c='red', ymin=0, ymax=hight, lw=5)
+                    ax1.axvline(x[i], ls='-', c='red', ymin=0, ymax=hight, lw=5)
+
                     newTonTemp = []
                     newTonTemp.append(x[i])
                     newTonTemp.append(1)
-                    newTonTemp.append("XC-MR")
+                    newTonTemp.append(type)
                     newTonTemp.append(
                         "<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入</b>")
                     NewtonBuySall.append(newTonTemp)
                 if y[i] > 0.5 and y[i - 1] <= 0.5 and y[i - 1] != 0:
-                    ax3.axvline(x[i], ls='-', c='#f47920', ymin=0, ymax=0.1, lw=5)
-                    ax1.axvline(x[i], ls='-', c='#f47920', ymin=0, ymax=0.1, lw=5)
+                    type="DONGLI-MR"
+                    hight=0.1
+                    if fListMap.__contains__(x[i]):
+                        hight=0.4
+                        type="DONGLE-FZ-MR"
+                    ax3.axvline(x[i], ls='-', c='#f47920', ymin=0, ymax=hight, lw=5)
+                    ax1.axvline(x[i], ls='-', c='#f47920', ymin=0, ymax=hight, lw=5)
                     newTonTemp = []
                     newTonTemp.append(x[i])
                     newTonTemp.append(1)
-                    newTonTemp.append("XC-MR")
+                    newTonTemp.append(type)
                     newTonTemp.append(
                         "<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">关注买入</b>")
                     NewtonBuySall.append(newTonTemp)
@@ -971,6 +987,7 @@ class Core:
 
 
         # 登出系统
+        # plt.show()
         if isTest==0:
             tempDir="C:\\zMain-pic\\temp\\"
             # tempDir = os.getcwd() + "/temp/"
@@ -978,7 +995,7 @@ class Core:
 
         else:
             plt.close(fig)
-        # plt.show()
+
         return NewtonBuySall,profit,currentIndex
 
 

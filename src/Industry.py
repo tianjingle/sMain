@@ -30,3 +30,11 @@ class Industry:
         result = result.rename(columns={'日期': 'date', '开盘': 'open', '收盘': 'close', '最高': 'high', '最低': 'low', '成交量': 'volume',
                                 '成交额': 'amount', '换手率': 'turn'})
         return result
+
+    #获取概念成员
+    def get_bankuan_members(self,name):
+        result=ak.stock_board_concept_cons_em(symbol=name)
+        print(result)
+        return result["代码"]
+
+# Industry().get_bankuan_members("MLCC")

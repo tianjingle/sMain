@@ -3,7 +3,7 @@ import os
 
 from src.Core import Core
 from src.Industry import Industry
-# 概念扫描
+
 class HangYe:
     core=Core()
     industray=Industry()
@@ -15,7 +15,7 @@ class HangYe:
     def scan(self):
         bankuan=self.industray.get_bankuan_names()
         for item in bankuan:
-            print(item)
+            item=item.replace("@","")
             self.core.start=-1
             NewtonBuySall,profit,currentIndex=self.core.execute(item,5,15,0,False)
             if NewtonBuySall ==None:
@@ -23,13 +23,16 @@ class HangYe:
             isToday = False
             caozuoHistory = sorted(NewtonBuySall, key=lambda x: x[0], reverse=True)
             flag = -1
+            type = ""
             for mmzd in caozuoHistory[:3]:
+                if mmzd[2] == "XC-MR" or mmzd[2] == "GAOWEIFANTAN-MR" or mmzd == "CHAODI-MR":
+                    type = "@"
                 if mmzd[0] > currentIndex:
                     flag = mmzd[1]
                     isToday = True
                     if flag > 0:
                         operation = "买"
-                        self.myBuy.append(item)
+                        self.myBuy.append(type+item)
                     else:
                         operation = "卖"
                         self.mySell.append(item)
@@ -37,7 +40,7 @@ class HangYe:
                     flag = mmzd[1]
                     isToday = True
                     if flag > 0:
-                        self.myBuy.append(item)
+                        self.myBuy.append(type+item)
                         operation = "买"
                     else:
                         self.mySell.append(item)
@@ -53,6 +56,3 @@ class HangYe:
         with open(self.BANKUAN_Buy_Sell_PATH) as f:
             return json.load(f)["buy"]
 
-# HangYe().scan()
-# buy=HangYe().getBuySellIndustry()
-# print(buy)

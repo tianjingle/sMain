@@ -7,6 +7,8 @@ from src.Core import Core
 import os
 
 from src.HangYe import HangYe
+from src.Industry import Industry
+from src.IndustryCore import IndustryCore
 
 
 class sMain:
@@ -79,7 +81,7 @@ class sMain:
 
     def start(self):
         # cur_path = os.path.abspath(os.path.dirname(__file__))
-        cur_path="C:\\Users\\tianjingle\\PycharmProjects\\sMain\src\\"
+        cur_path="C:\zMain-pic"
         tempDir=cur_path+"/temp/"
         if os.path.exists(tempDir)==False:
             os.makedirs(tempDir)
@@ -92,12 +94,44 @@ class sMain:
         print("2.股票波段计算")
         core.start(config.myStock)
 
+    def doParseCode(self,tt):
+        name=""+tt
+        if name.startswith("00") or name.startswith("200") or name.startswith("300"):
+            return "sz."+name
+        return "sh."+tt
+
     def concept(self):
+        # 行业扫描
         HangYe().scan()
+        self.getHangyeStock()
+
+    def getHangyeStock(self):
+        f = "C:\\Users\\Administrator\\PycharmProjects\\sMain\\src\\IndustryStockResult.txt"
+
+        with open(f, "w") as file:  # 只需要将之前的”w"改为“a"即可，代表追加内容
+            industry=Industry()
+            industryCore=IndustryCore()
+            #获取买入的概念信息
+            buyIndustry=HangYe().getBuySellIndustry()
+            for itme in buyIndustry:
+                #板块成员的code
+                itme=itme.replace("@","")
+                codes=industry.get_bankuan_members(itme)
+                print(codes)
+                for one in codes:
+                    realcode=self.doParseCode(one)
+                    print(realcode)
+                    ok,type=industryCore.startA(realcode)
+                    if ok:
+                        if type!='':
+                            one=type+one+"</font>"
+                        print(one+"\tshould buy")
+                        file.write(one+ "\n")
+                        file.flush()
+
+# sMain().getHangyeStock()
 
 
-s=sMain()
-s.start()
 
 
 
