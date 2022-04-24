@@ -1,6 +1,9 @@
 import os
-
-
+import sys
+curPath=os.path.abspath(os.path.dirname(__file__))
+rootPath=os.path.split(curPath)[0]
+sys.path.append(rootPath)
+sys.path.append("C:\\Users\\Administrator\\PycharmProjects\\myzMain\\venv\\Lib\\site-packages")
 import matplotlib.pyplot as plt
 from matplotlib.pylab import date2num
 import matplotlib.ticker as ticker  # 用于日期刻度定制
@@ -10,11 +13,6 @@ import numpy as np
 import datetime
 from matplotlib import colors as mcolors  # 用于颜色转换成渲染时顶点需要的颜色格式
 from matplotlib.collections import LineCollection, PolyCollection  # 用于绘制直线集合和多边形集合
-import smtplib
-from email.mime.image import MIMEImage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.header import Header
 import talib
 
 
@@ -33,7 +31,7 @@ from src.Qsms import Qsms
 from src.Tencent import Tencent
 
 
-class Core:
+class CoreJava:
     industry=Industry()
     stackCode="sz.000918"
     isIndex=False
@@ -175,6 +173,7 @@ class Core:
         return erjieK
 
     def init(self):
+        print("init")
         stackCode = "sh.000001"
         isIndex = True
         # isIndex=False
@@ -431,6 +430,7 @@ class Core:
         myyj=mywidth
         Kflag=self.everyErChengPrice(self.result,mywidth)
         erjieSlow=self.everyErChengPrice(self.result,mylength)
+        print(erjieSlow)
         #将收盘价转化为字典
         testX=[]
         testY=[]
@@ -1000,134 +1000,10 @@ class Core:
         return NewtonBuySall,profit,currentIndex
 
 
-    def start(self,codes):
+    def startt(self,code):
+        print(code)
+        return self.execute(code,15,30,0)
 
-        imgsOKstr=""
-        imgsOK=[]
-        oldTotal=0
-        currentTotal=0
-        myWxPusher=MyWxPusher()
-        myBuy=[]
-        mySell=[]
-        for items in codes:
-            item=items[0]
-            self.start = -1
-            NewtonBuySall,profit,currentIndex=self.execute(item,int(items[4]),int(items[5]),0)
-            if profit<=0:
-                historyProfit="<span style=\"background-color:	rgb(216,216,216) ;font-size:20px;line-height:20px\"><font color='#003366'>回测收益率："+str(round(profit,2))+"%</font>  （🤪🤪🤪不建议投资该股票！）</span></br>"
-            else:
-                historyProfit = "<span style=\"background-color:rgb(255,255,0);font-size:20px;line-height:20px\"><font color='red'>回测收益率：" + str(round(profit, 2)) + "%</font>👍👍👍</span></br>"
-            zhidaoToday="<span style=\"background-color:rgb(255,255,0);font-size:20px;line-height:20px\"><font color='red'>❤❤❤当前走势尚不能操盘指令✔✔✔✔~~~~</font></span></br>"
-            zhidao=""
-            isToday=False
-            caozuoHistory=sorted(NewtonBuySall, key=lambda x: x[0], reverse=True)
-            flag=-1
-            for mmzd in caozuoHistory[:3]:
-                if mmzd[0]>currentIndex:
-                    zhidaoToday=mmzd[3]
-                    flag=mmzd[1]
-                    isToday=True
-                    if self.couldTencent() == 1:
-                        if flag > 0:
-                            operation = "买"
-                            myBuy.append(items[3])
-                        else:
-                            operation = "卖"
-                            mySell.append(items[3])
-                        Qsms().sendSms(None, items[3], "", operation)
-                if isToday==False and mmzd[0]==currentIndex:
-                    zhidaoToday=mmzd[3]
-                    flag = mmzd[1]
-                    isToday=True
-                    if self.couldTencent() == 1:
-                        if flag > 0:
-                            myBuy.append(items[3])
-                            operation = "买"
-                        else:
-                            mySell.append(items[3])
-                            operation = "卖"
-                        Qsms().sendSms(None, items[3],"", operation)
-                else:
-                    temp=mmzd[3]
-                    temp=temp.replace("b","span")
-                    temp=temp.replace("20","16")
-                    zhidao=zhidao+"<font color='orange'>"+temp+"</font></br>"
-                    isToday=False
-            if isToday:
-                zhidaoToday="<p><b><font color='red'>"+zhidaoToday+"</font></b></p>"
-            imgsOKstr=imgsOKstr+ historyProfit+zhidaoToday
-            color="red"
-            shouyi=0
-            if items[1]!=0:
-                # sh.000001, 3.568, 100, 上证指数, 0, 30
-                shouyi=float(self.currentPrice)-float(items[1])
-                oldTotal=oldTotal+(float(items[1])*int(items[2]))
-                currentTotal=currentTotal+(float(self.currentPrice)*int(items[2]))
-            if shouyi>0:
-                shouyidisc="<font color='red'>" + str(round(shouyi*int(items[2]),2)) + "</font>"
-            else:
-                shouyidisc = "<font color='green'>" + str(round(shouyi*int(items[2]),2)) + "</font>"
-            if self.currentPrice>float(items[1]):
-                color="green"
-            imgsOKstr = imgsOKstr+"<span style=\"background-color:rgba(255,255,0,0.75);font-size:20px;line-height:20px\">"+str(items[3])+"<font color='"+color+"'>"+str(self.currentPrice)+"-"+str(items[1])+"="+str(round(self.currentPrice-float(items[1]),2))+"  "+shouyidisc+"</span></br><img src='cid:" + item + "'></front>"+zhidao
-            imgsOK.append(item)
-
-            # print("\033[1;33;40m \t"+items[0]+","+items[3]+"\tok         \033[0m")
-            print("\t"+items[0]+","+items[3]+"\tok         ")
-
-        myWxPusher.sendWxPusher(myBuy,mySell)
-        #时间内才发送
-        # if self.couldTencent()==1:
-        #     return
-        endDate=time.strftime('%Y-%m-%d',time.localtime(time.time()))
-        conf=Config()
-        my_pass = conf.emailPass  # 发件人邮箱密码
-        my_user = conf.emaialUser  # 收件人邮箱账号，我这边发送给自己
-        sender = conf.emaialUser
-        receive=conf.receiver.split(",")
-        #print(receive)
-        receivers = [receive]  # 接收邮件，可设置为你的QQ邮箱或者其他邮箱
-        msgRoot = MIMEMultipart('related')
-        dic=round(currentTotal - oldTotal,2)
-        mycolor="red"
-        if dic<=0:
-            mycolor="green"
-        zijingbiandong=str(currentTotal) + "-" + str(oldTotal) + "=" + str(dic)
-        msgRoot['From'] = Header(str(endDate)+"  "+str(currentTotal - oldTotal), 'utf-8')
-        msgRoot['To'] = Header("sMain操作简报", 'utf-8')
-        subject = str(endDate)+' 收益：'+str(dic)
-        msgRoot['Subject'] = Header(subject, 'utf-8')
-
-        msgAlternative = MIMEMultipart('alternative')
-        msgRoot.attach(msgAlternative)
-
-        mail_msg = "<span style=\"background-color:rgba(255,255,0,0.25);font-size:20px;line-height:20px\">第一次持股收益：<font color='"+mycolor+"'>"+zijingbiandong+"</font></span><p>"+imgsOKstr+"</p>"
-        msgAlternative.attach(MIMEText(mail_msg, 'html', 'utf-8'))
-
-        # 指定图片为当前目录
-        # cur_path = os.getcwd()
-        cur_path="C:\zMain-pic"
-        tempDir = cur_path + "/temp/"
-        for item in imgsOK:
-            fp = open(tempDir+item+".png", 'rb')
-            msgImage = MIMEImage(fp.read())
-            fp.close()
-            temp="<"+item+">"
-            # 定义图片 ID，在 HTML 文本中引用
-            msgImage.add_header('Content-ID', temp)
-            msgRoot.attach(msgImage)
-        # print("\033[1;32;40m 3.邮件发送  \033[0m")
-        print("3.邮件发送  ")
-        try:
-            smtpObj = smtplib.SMTP()
-            smtpObj.connect('smtp.qq.com', 25)    # 25 为 SMTP 端口号
-            smtpObj.login(my_user,my_pass)
-            smtpObj.sendmail(sender, receivers, msgRoot.as_string())
-            print("邮件发送成功")
-        except smtplib.SMTPException:
-            print("Error: 无法发送邮件")
-
-        # os.system('shutdown -s -f -t 180')
 
     # 在k线基础上计算KDF，并将结果存储在df上面(k,d,j)
     def zsLine(self,df):
@@ -1167,3 +1043,17 @@ class Core:
         #是否反转，1表示反转，0表示没有反转
         mm = (df['J1'] > 3) & (df['J2'] <= 3)
         return mm
+
+
+
+if __name__=='__main__':
+    code=str(sys.argv)
+    a=[]
+    for i in range(len(sys.argv)):
+        a.append(sys.argv[i])
+    print(a)
+    if len(a)>0:
+        corejava = CoreJava()
+        corejava.startt(a[1])
+
+
