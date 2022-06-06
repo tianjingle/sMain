@@ -6,11 +6,11 @@ import ssl
 # 发送短信
 class Qsms:
     # 短信应用SDK AppID
-    appid = 1400218666  # SDK AppID是1400开头
+    appid = 123123123123  # SDK AppID是1400开头
     # 短信应用SDK AppKey
-    appkey = "414c40f8dcd85a9806db3be68ecde570"
+    appkey = "123123123"
     # 需要发送短信的手机号码
-    default_phone = ["15652466911"]
+    default_phone = ["123123123"]
     # 短信模板ID，需要在短信应用中申请
     template_id = 1285045
     # 签名
