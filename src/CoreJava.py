@@ -1,9 +1,11 @@
 import os
 import sys
+from MyTT import *
 curPath=os.path.abspath(os.path.dirname(__file__))
 rootPath=os.path.split(curPath)[0]
 sys.path.append(rootPath)
 sys.path.append("C:\\Users\\Administrator\\PycharmProjects\\myzMain\\venv\\Lib\\site-packages")
+
 import matplotlib.pyplot as plt
 from matplotlib.pylab import date2num
 import matplotlib.ticker as ticker  # 用于日期刻度定制
@@ -258,8 +260,7 @@ class CoreJava:
             temp.append(row['open'])
             temp.append(row['high'])
             temp.append(row['low'])
-            # temp.append(row['close'])
-            temp.append((float(row['high'])+float(row['low'])/2))
+            temp.append((float(row['high'])+float(row['low']))/2)
             currentPrice=float(row['close'])
             temp.append(row['volume'])
             temp.append(row['tprice'])
@@ -348,52 +349,70 @@ class CoreJava:
 
 
 
-        #主力散户吸筹
-        # VAR2:=REF(LOW,1);      前一日的最低价
-        self.result['VAR2'] = self.result['low']
-        self.result['VAR2']=self.result['VAR2'].shift(1)
-        self.result=self.result.fillna(0)
-        self.result['low']=self.result['low'].astype(float)
-        self.result['VAR2']=self.result['VAR2'].astype(float)
-        self.result['closeP']=self.result['close']
-        self.result['closeP']=self.result['closeP'].astype(float)
-
-        # VAR3 := SMA(ABS(LOW - VAR2), 3, 1) / SMA(MAX(LOW - VAR2, 0), 3, 1) * 100;
-        self.result['LOW_VAR2']=self.result['low']-self.result['VAR2']
-        self.result['var3Pre']=talib.SMA(self.result['LOW_VAR2'].abs(),3)
-        self.result = self.result.assign(var3sub=np.where(self.result.LOW_VAR2 > 0, self.result.LOW_VAR2, 0.00000000000000000001))
-        self.result['var3sub']=talib.SMA(self.result['var3sub'],3)
-
-        self.result['VAR3']=talib.MULT(talib.DIV(self.result['var3Pre'],self.result['var3sub']),self.result['VAR100'])
-        self.result=self.result.assign(tianjingle=np.where(self.result.closeP*1.3!=0,round(self.result.VAR3*10,2),self.result.VAR3/10))
-        self.result['tianjingle']=self.result['tianjingle'].astype(float)
-        self.result['tianjingle'].fillna(0)
-        self.result['VAR4']=talib.EMA(self.result['tianjingle'],3)
-        #print(self.result['VAR4'])
-        # VAR5 := LLV(LOW, 30);
-        self.result['VAR5']=self.result['low'].rolling(30).min()
-        # VAR6 := HHV(VAR4, 30);
-        self.result['VAR6']=self.result['VAR4'].rolling(30).max()
-        #print(self.result['VAR6'])
-        # VAR7 := IF(MA(CLOSE, 58), 1, 0);
-        self.result['VAR7temp']=talib.MA(self.result['close'], 58)
-        #这里做判断
-        self.result=self.result.assign(VAR7=np.where(self.result.VAR7temp!=0,1,0))
-        # VAR8 := EMA(IF(LOW <= VAR5, (VAR4 + VAR6 * 2) / 2, 0), 3) / 618 * VAR7;
-        self.result=self.result.assign(VAR8TEMP=np.where(self.result.low<=self.result.VAR5,(self.result.VAR4+self.result.VAR6*2)/2,0))
-        self.result['VAR8TEMP']=talib.EMA(self.result['VAR8TEMP'],3)
-        self.result['VAR8']=talib.MULT(talib.DIV(self.result['VAR8TEMP'],self.result['VAR618']),self.result['VAR7'])
-        #print(self.result['VAR8'].max())
-        #print(self.result['VAR8'].min())
-        self.result['VAR8']=self.result['VAR8']/10000000000000000000
-        # VAR9 := IF(VAR8 > 100, 100, VAR8);
-        self.result=self.result.assign(VAR9=np.where(self.result.VAR8>100,100,self.result.VAR8))
-        #输出吸筹:当满足条件VAR9>-120时,在0和VAR9位置之间画柱状线,宽度为2,5不为0则画空心柱.,画洋红色
-        # 输出地量:当满足条件0.9上穿1/成交量(手)*1000>0.01AND"KDJ的J"<0时,在最低价*1位置书写文字,COLOR00FFFF
-        # 吸筹: STICKLINE(VAR9 > -120, 0, VAR9, 2, 5), COLORMAGENTA;
-        # 地量: DRAWTEXT(CROSS(0.9, 1 / VOL * 1000 > 0.01 AND "KDJ.J" < 0), L * 1, '地量'), COLOR00FFFF;
-        self.result=self.result.assign(VARXC=np.where(self.result.VAR9>5,self.result.VAR9,0))
+        # #主力散户吸筹
+        # # VAR2:=REF(LOW,1);      前一日的最低价
+        # self.result['VAR2'] = self.result['low']
+        # self.result['VAR2']=self.result['VAR2'].shift(1)
+        # self.result=self.result.fillna(0)
+        # self.result['low']=self.result['low'].astype(float)
+        # self.result['VAR2']=self.result['VAR2'].astype(float)
+        # self.result['closeP']=self.result['close']
+        # self.result['closeP']=self.result['closeP'].astype(float)
+        #
+        # # VAR3 := SMA(ABS(LOW - VAR2), 3, 1) / SMA(MAX(LOW - VAR2, 0), 3, 1) * 100;
+        # self.result['LOW_VAR2']=self.result['low']-self.result['VAR2']
+        # self.result['var3Pre']=talib.SMA(self.result['LOW_VAR2'].abs(),3)
+        # self.result = self.result.assign(var3sub=np.where(self.result.LOW_VAR2 > 0, self.result.LOW_VAR2, 0.00000000000000000001))
+        # self.result['var3sub']=talib.SMA(self.result['var3sub'],3)
+        #
+        # self.result['VAR3']=talib.MULT(talib.DIV(self.result['var3Pre'],self.result['var3sub']),self.result['VAR100'])
+        # self.result=self.result.assign(tianjingle=np.where(self.result.closeP*1.3!=0,round(self.result.VAR3*10,2),self.result.VAR3/10))
+        # self.result['tianjingle']=self.result['tianjingle'].astype(float)
+        # self.result['tianjingle'].fillna(0)
+        # self.result['VAR4']=talib.EMA(self.result['tianjingle'],3)
+        # #print(self.result['VAR4'])
+        # # VAR5 := LLV(LOW, 30);
+        # self.result['VAR5']=self.result['low'].rolling(30).min()
+        # # VAR6 := HHV(VAR4, 30);
+        # self.result['VAR6']=self.result['VAR4'].rolling(30).max()
+        # #print(self.result['VAR6'])
+        # # VAR7 := IF(MA(CLOSE, 58), 1, 0);
+        # self.result['VAR7temp']=talib.MA(self.result['close'], 58)
+        # #这里做判断
+        # self.result=self.result.assign(VAR7=np.where(self.result.VAR7temp!=0,1,0))
+        # # VAR8 := EMA(IF(LOW <= VAR5, (VAR4 + VAR6 * 2) / 2, 0), 3) / 618 * VAR7;
+        # self.result=self.result.assign(VAR8TEMP=np.where(self.result.low<=self.result.VAR5,(self.result.VAR4+self.result.VAR6*2)/2,0))
+        # self.result['VAR8TEMP']=talib.EMA(self.result['VAR8TEMP'],3)
+        # self.result['VAR8']=talib.MULT(talib.DIV(self.result['VAR8TEMP'],self.result['VAR618']),self.result['VAR7'])
+        # #print(self.result['VAR8'].max())
+        # #print(self.result['VAR8'].min())
+        # self.result['VAR8']=self.result['VAR8']/10000000000000000000
+        # # VAR9 := IF(VAR8 > 100, 100, VAR8);
+        # self.result=self.result.assign(VAR9=np.where(self.result.VAR8>100,100,self.result.VAR8))
+        # #输出吸筹:当满足条件VAR9>-120时,在0和VAR9位置之间画柱状线,宽度为2,5不为0则画空心柱.,画洋红色
+        # # 输出地量:当满足条件0.9上穿1/成交量(手)*1000>0.01AND"KDJ的J"<0时,在最低价*1位置书写文字,COLOR00FFFF
+        # # 吸筹: STICKLINE(VAR9 > -120, 0, VAR9, 2, 5), COLORMAGENTA;
+        # # 地量: DRAWTEXT(CROSS(0.9, 1 / VOL * 1000 > 0.01 AND "KDJ.J" < 0), L * 1, '地量'), COLOR00FFFF;
+        # self.result=self.result.assign(VARXC=np.where(self.result.VAR9>5,self.result.VAR9,0))
         #print(self.result[['low','VAR4','VAR5','VAR6','VAR7','VAR8','VAR9','VARXC']])
+
+
+
+
+
+
+        VAR1 = 1
+        VAR2 = REF(self.result['low'].astype(float), 1) * VAR1
+        VAR3 = SMA(ABS(self.result['low'].astype(float) - VAR2), 3, 1) / SMA(MAX(self.result['low'].astype(float) - VAR2, 0), 3, 1) * 100 * VAR1
+        VAR4 = EMA(IF(self.result['close'].astype(float) * 1.3, VAR3 * 10, VAR3 / 10), 3) * VAR1
+        VAR5 = LLV(self.result['low'].astype(float), 30) * VAR1
+        VAR6 = HHV(VAR4, 30) * VAR1
+        VAR7 = IF(MA(self.result['close'].astype(float), 58), 1, 0) * VAR1
+        VAR8 = EMA(IF(self.result['low'].astype(float) <= VAR5, (VAR4 + VAR6 * 2) / 2, 0), 3) / 618 * VAR7 * VAR1
+        xc = IF(VAR8 > 100, 100, VAR8) * VAR1
+        self.result['VARXC'] = xc
+
+
         return self.result,self.start
 
     #是否走腾讯数据
@@ -445,6 +464,10 @@ class CoreJava:
                 VARXCHIGH.append(float(XCH))
             testX.append(currentIndex)
             testY.append(price)
+
+
+
+
         indexCloseDict=dict(zip(testX,testY))
 
 
@@ -514,6 +537,7 @@ class CoreJava:
         ax1.legend(loc='upper left')  # 图例放置于右上角
         ax1.xaxis_date()  # 好像要不要效果一样？
 
+        ax5.bar(VARXCX, VARXCHIGH, color='#ffffcc', width=0.5, alpha=0.8)  # 画吸筹
         #计算二阶导数
         erjieK=self.doubleErJie(Kflag,3)
         x1=[]
@@ -996,7 +1020,7 @@ class CoreJava:
 
         else:
             plt.close(fig)
-
+        # plt.show()
         return NewtonBuySall,profit,currentIndex
 
 
@@ -1048,12 +1072,14 @@ class CoreJava:
 
 if __name__=='__main__':
     code=str(sys.argv)
+    # a=['','sz.000409']
     a=[]
     for i in range(len(sys.argv)):
         a.append(sys.argv[i])
     print(a)
     if len(a)>0:
         corejava = CoreJava()
+        # corejava.startt("sz.000666")
         corejava.startt(a[1])
 
 

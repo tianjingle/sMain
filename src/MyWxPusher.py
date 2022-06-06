@@ -24,7 +24,7 @@ class MyWxPusher:
             sellHtm=sellHtm+"<h3>"+item+"</h3>"
         sellHtm=sellHtm+"<hr>"
         endHtml=buyHtm+sellHtm
-        couldBuySell=isBuy&isSell
+        couldBuySell=isBuy|isSell
         if couldBuySell:
             res=WxPusher.send_message(endHtml,
                                   # uids=uids,

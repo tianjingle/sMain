@@ -16,6 +16,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.header import Header
 import talib
+from src.MyTT import *
 
 
 
@@ -28,6 +29,7 @@ import time
 
 from src.ChipCalculate import ChipCalculate
 from src.Industry import Industry
+from src.MyTT import REF
 from src.MyWxPusher import MyWxPusher
 from src.Qsms import Qsms
 from src.Tencent import Tencent
@@ -259,8 +261,7 @@ class Core:
             temp.append(row['open'])
             temp.append(row['high'])
             temp.append(row['low'])
-            # temp.append(row['close'])
-            temp.append((float(row['high'])+float(row['low'])/2))
+            temp.append((float(row['high'])+float(row['low']))/2)
             currentPrice=float(row['close'])
             temp.append(row['volume'])
             temp.append(row['tprice'])
@@ -349,56 +350,72 @@ class Core:
 
 
 
-        #主力散户吸筹
-        # VAR2:=REF(LOW,1);      前一日的最低价
-        self.result['VAR2'] = self.result['low']
-        self.result['VAR2']=self.result['VAR2'].shift(1)
-        self.result=self.result.fillna(0)
-        self.result['low']=self.result['low'].astype(float)
-        self.result['VAR2']=self.result['VAR2'].astype(float)
-        self.result['closeP']=self.result['close']
-        self.result['closeP']=self.result['closeP'].astype(float)
+        # #主力散户吸筹
+        # # VAR2:=REF(LOW,1);      前一日的最低价
+        # self.result['VAR2'] = self.result['low']
+        # self.result['VAR2']=self.result['VAR2'].shift(1)
+        # self.result=self.result.fillna(0)
+        # self.result['low']=self.result['low'].astype(float)
+        # self.result['VAR2']=self.result['VAR2'].astype(float)
+        # self.result['closeP']=self.result['close']
+        # self.result['closeP']=self.result['closeP'].astype(float)
+        #
+        # # VAR3 := SMA(ABS(LOW - VAR2), 3, 1) / SMA(MAX(LOW - VAR2, 0), 3, 1) * 100;
+        # self.result['LOW_VAR2']=self.result['low']-self.result['VAR2']
+        # self.result['var3Pre']=talib.SMA(self.result['LOW_VAR2'].abs(),3)
+        # self.result = self.result.assign(var3sub=np.where(self.result.LOW_VAR2 > 0, self.result.LOW_VAR2, 0.00000000000000000001))
+        # self.result['var3sub']=talib.SMA(self.result['var3sub'],3)
+        #
+        # self.result['VAR3']=talib.MULT(talib.DIV(self.result['var3Pre'],self.result['var3sub']),self.result['VAR100'])
+        # self.result=self.result.assign(tianjingle=np.where(self.result.closeP*1.3!=0,round(self.result.VAR3*10,2),self.result.VAR3/10))
+        # self.result['tianjingle']=self.result['tianjingle'].astype(float)
+        # self.result['tianjingle'].fillna(0)
+        # self.result['VAR4']=talib.EMA(self.result['tianjingle'],3)
+        # #print(self.result['VAR4'])
+        # # VAR5 := LLV(LOW, 30);
+        # self.result['VAR5']=self.result['low'].rolling(30).min()
+        # # VAR6 := HHV(VAR4, 30);
+        # self.result['VAR6']=self.result['VAR4'].rolling(30).max()
+        # #print(self.result['VAR6'])
+        # # VAR7 := IF(MA(CLOSE, 58), 1, 0);
+        # self.result['VAR7temp']=talib.MA(self.result['close'], 58)
+        # #这里做判断
+        # self.result=self.result.assign(VAR7=np.where(self.result.VAR7temp!=0,1,0))
+        # # VAR8 := EMA(IF(LOW <= VAR5, (VAR4 + VAR6 * 2) / 2, 0), 3) / 618 * VAR7;
+        # self.result=self.result.assign(VAR8TEMP=np.where(self.result.low<=self.result.VAR5,(self.result.VAR4+self.result.VAR6*2)/2,0))
+        # self.result['VAR8TEMP']=talib.EMA(self.result['VAR8TEMP'],3)
+        # self.result['VAR8']=talib.MULT(talib.DIV(self.result['VAR8TEMP'],self.result['VAR618']),self.result['VAR7'])
+        # #print(self.result['VAR8'].max())
+        # #print(self.result['VAR8'].min())
+        # self.result['VAR8']=self.result['VAR8']/10000000000000000000
+        # # VAR9 := IF(VAR8 > 100, 100, VAR8);
+        # self.result=self.result.assign(VAR9=np.where(self.result.VAR8>100,100,self.result.VAR8))
+        # #输出吸筹:当满足条件VAR9>-120时,在0和VAR9位置之间画柱状线,宽度为2,5不为0则画空心柱.,画洋红色
+        # # 输出地量:当满足条件0.9上穿1/成交量(手)*1000>0.01AND"KDJ的J"<0时,在最低价*1位置书写文字,COLOR00FFFF
+        # # 吸筹: STICKLINE(VAR9 > -120, 0, VAR9, 2, 5), COLORMAGENTA;
+        # # 地量: DRAWTEXT(CROSS(0.9, 1 / VOL * 1000 > 0.01 AND "KDJ.J" < 0), L * 1, '地量'), COLOR00FFFF;
+        # self.result=self.result.assign(VARXC=np.where(self.result.VAR9>5,self.result.VAR9,0))
+        # #print(self.result[['low','VAR4','VAR5','VAR6','VAR7','VAR8','VAR9','VARXC']])
 
-        # VAR3 := SMA(ABS(LOW - VAR2), 3, 1) / SMA(MAX(LOW - VAR2, 0), 3, 1) * 100;
-        self.result['LOW_VAR2']=self.result['low']-self.result['VAR2']
-        self.result['var3Pre']=talib.SMA(self.result['LOW_VAR2'].abs(),3)
-        self.result = self.result.assign(var3sub=np.where(self.result.LOW_VAR2 > 0, self.result.LOW_VAR2, 0.00000000000000000001))
-        self.result['var3sub']=talib.SMA(self.result['var3sub'],3)
 
-        self.result['VAR3']=talib.MULT(talib.DIV(self.result['var3Pre'],self.result['var3sub']),self.result['VAR100'])
-        self.result=self.result.assign(tianjingle=np.where(self.result.closeP*1.3!=0,round(self.result.VAR3*10,2),self.result.VAR3/10))
-        self.result['tianjingle']=self.result['tianjingle'].astype(float)
-        self.result['tianjingle'].fillna(0)
-        self.result['VAR4']=talib.EMA(self.result['tianjingle'],3)
-        #print(self.result['VAR4'])
-        # VAR5 := LLV(LOW, 30);
-        self.result['VAR5']=self.result['low'].rolling(30).min()
-        # VAR6 := HHV(VAR4, 30);
-        self.result['VAR6']=self.result['VAR4'].rolling(30).max()
-        #print(self.result['VAR6'])
-        # VAR7 := IF(MA(CLOSE, 58), 1, 0);
-        self.result['VAR7temp']=talib.MA(self.result['close'], 58)
-        #这里做判断
-        self.result=self.result.assign(VAR7=np.where(self.result.VAR7temp!=0,1,0))
-        # VAR8 := EMA(IF(LOW <= VAR5, (VAR4 + VAR6 * 2) / 2, 0), 3) / 618 * VAR7;
-        self.result=self.result.assign(VAR8TEMP=np.where(self.result.low<=self.result.VAR5,(self.result.VAR4+self.result.VAR6*2)/2,0))
-        self.result['VAR8TEMP']=talib.EMA(self.result['VAR8TEMP'],3)
-        self.result['VAR8']=talib.MULT(talib.DIV(self.result['VAR8TEMP'],self.result['VAR618']),self.result['VAR7'])
-        #print(self.result['VAR8'].max())
-        #print(self.result['VAR8'].min())
-        self.result['VAR8']=self.result['VAR8']/10000000000000000000
-        # VAR9 := IF(VAR8 > 100, 100, VAR8);
-        self.result=self.result.assign(VAR9=np.where(self.result.VAR8>100,100,self.result.VAR8))
-        #输出吸筹:当满足条件VAR9>-120时,在0和VAR9位置之间画柱状线,宽度为2,5不为0则画空心柱.,画洋红色
-        # 输出地量:当满足条件0.9上穿1/成交量(手)*1000>0.01AND"KDJ的J"<0时,在最低价*1位置书写文字,COLOR00FFFF
-        # 吸筹: STICKLINE(VAR9 > -120, 0, VAR9, 2, 5), COLORMAGENTA;
-        # 地量: DRAWTEXT(CROSS(0.9, 1 / VOL * 1000 > 0.01 AND "KDJ.J" < 0), L * 1, '地量'), COLOR00FFFF;
-        self.result=self.result.assign(VARXC=np.where(self.result.VAR9>5,self.result.VAR9,0))
-        #print(self.result[['low','VAR4','VAR5','VAR6','VAR7','VAR8','VAR9','VARXC']])
+        VAR1 = 1
+        VAR2 = REF(self.result['low'].astype(float), 1) * VAR1
+        VAR3 = SMA(ABS(self.result['low'].astype(float) - VAR2), 3, 1) / SMA(MAX(self.result['low'].astype(float) - VAR2, 0), 3, 1) * 100 * VAR1
+        VAR4 = EMA(IF(self.result['close'].astype(float) * 1.3, VAR3 * 10, VAR3 / 10), 3) * VAR1
+        VAR5 = LLV(self.result['low'].astype(float), 30) * VAR1
+        VAR6 = HHV(VAR4, 30) * VAR1
+        VAR7 = IF(MA(self.result['close'].astype(float), 58), 1, 0) * VAR1
+        VAR8 = EMA(IF(self.result['low'].astype(float) <= VAR5, (VAR4 + VAR6 * 2) / 2, 0), 3) / 618 * VAR7 * VAR1
+        xc = IF(VAR8 > 100, 100, VAR8) * VAR1
+        self.result['VARXC'] = xc
+
+
+
         return self.result,self.start
 
     #是否走腾讯数据
     def couldTencent(self):
+
         # 范围时间
         start_time = datetime.datetime.strptime(str(datetime.datetime.now().date()) + '9:30', '%Y-%m-%d%H:%M')
         # 开始时间
@@ -531,10 +548,26 @@ class Core:
         tmax = resultEnd[0][4]
         print(tmax)
         chouMalit = np.array(choumaList)
+
+
+        ChoumaUpy=[]
+        ChoumaUpHight=[]
+        ChoumaDowny=[]
+        ChoumaDownHight=[]
         for item in chouMalit:
-            item[0] = item[0] * 1.0 / 100
-        cmx.barh(chouMalit[:, 0], chouMalit[:, 1], color="Turquoise", align="center", height=0.05)
+            priceTemp = item[0] * 1.0 / 100
+            if priceTemp>=self.priceJJJ:
+                ChoumaUpy.append(priceTemp)
+                ChoumaUpHight.append(item[1])
+            else:
+                ChoumaDowny.append(priceTemp)
+                ChoumaDownHight.append(item[1])
+        cmx.barh(ChoumaDowny, ChoumaDownHight, color="y", align="center", height=0.05)
+        cmx.barh(ChoumaUpy, ChoumaUpHight, color="Turquoise", align="center", height=0.05)
         cmx.barh(TavcPrice, tmax, color="red", height=0.05)
+
+
+        ax5.bar(VARXCX, VARXCHIGH, color='#ffffcc', width=0.5, alpha=0.8)  # 画吸筹
         x=[]
         p=[]
         priceBigvolPriceIndexs=[]
@@ -902,13 +935,14 @@ class Core:
 
 
         for i in range(len(VARXCX)):
-            newTonTemp = []
-            newTonTemp.append(VARXCX[i])
-            newTonTemp.append(1)
-            newTonTemp.append("XC-MR")
-            newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入，通达信吸筹买入点，但是一般会连续出现</b>")
-            NewtonBuySall.append(newTonTemp)
-            ax1.axvline(VARXCX[i], ls='-', c='orange',ymax=0.02,ymin=0, lw=2)
+            if VARXCHIGH[i]>40:
+                newTonTemp = []
+                newTonTemp.append(VARXCX[i])
+                newTonTemp.append(1)
+                newTonTemp.append("XC-MR")
+                newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入，通达信吸筹买入点，但是一般会连续出现</b>")
+                NewtonBuySall.append(newTonTemp)
+            # ax1.axvline(VARXCX[i], ls='-', c='orange',ymax=0.02,ymin=0, lw=2)
 
         x=[]
         y=[]
@@ -1027,25 +1061,23 @@ class Core:
                     zhidaoToday=mmzd[3]
                     flag=mmzd[1]
                     isToday=True
-                    if self.couldTencent() == 1:
-                        if flag > 0:
-                            operation = "买"
-                            myBuy.append(items[3])
-                        else:
-                            operation = "卖"
-                            mySell.append(items[3])
+                    if flag > 0:
+                        operation = "买"
+                        myBuy.append(items[3])
+                    else:
+                        operation = "卖"
+                        mySell.append(items[3])
                         Qsms().sendSms(None, items[3], "", operation)
                 if isToday==False and mmzd[0]==currentIndex:
                     zhidaoToday=mmzd[3]
                     flag = mmzd[1]
                     isToday=True
-                    if self.couldTencent() == 1:
-                        if flag > 0:
-                            myBuy.append(items[3])
-                            operation = "买"
-                        else:
-                            mySell.append(items[3])
-                            operation = "卖"
+                    if flag > 0:
+                        myBuy.append(items[3])
+                        operation = "买"
+                    else:
+                        mySell.append(items[3])
+                        operation = "卖"
                         Qsms().sendSms(None, items[3],"", operation)
                 else:
                     temp=mmzd[3]

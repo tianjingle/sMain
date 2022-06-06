@@ -259,8 +259,7 @@ class IndustryCore:
             temp.append(row['open'])
             temp.append(row['high'])
             temp.append(row['low'])
-            # temp.append(row['close'])
-            temp.append((float(row['high'])+float(row['low'])/2))
+            temp.append((float(row['high'])+float(row['low']))/2)
             currentPrice=float(row['close'])
             temp.append(row['volume'])
             temp.append(row['tprice'])
@@ -439,7 +438,7 @@ class IndustryCore:
             currentIndex=index-self.start
             price=row['close']
             XCH=row['VARXC']
-            if float(XCH)>0:
+            if float(XCH)>40:
                 VARXCX.append(currentIndex)
                 VARXCHIGH.append(float(XCH))
             testX.append(currentIndex)
@@ -911,7 +910,7 @@ class IndustryCore:
             newTonTemp.append("XC-MR")
             newTonTemp.append("<b style=\"background-color:rgba(255,255,0);font-size:20px;line-height:20px;margin:0px 0px;\">买入，通达信吸筹买入点，但是一般会连续出现</b>")
             NewtonBuySall.append(newTonTemp)
-            ax1.axvline(VARXCX[i], ls='-', c='orange',ymax=0.02,ymin=0, lw=2)
+            # ax1.axvline(VARXCX[i], ls='-', c='orange',ymax=0.02,ymin=0, lw=2)
 
         x=[]
         y=[]
