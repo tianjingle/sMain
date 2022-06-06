@@ -18,25 +18,26 @@ class Qsms:
 
     # 发送短信
     def sendSms(self, phones, code, price, operation):
-        ssl._create_default_https_context = ssl._create_unverified_context
-        ssender = SmsSingleSender(self.appid, self.appkey)
-        # 当模板没有参数时，`params = []`
-        params = []
-        if len(code)>4:
-            code=code[:4]
-        params.append(code)
-        params.append(operation)
-        print(params)
-        if phones == None or phones == "":
-            phonesTemp = self.default_phone
-        else:
-            phonesTemp = phones.split(",")
-        for item in phonesTemp:
-            try:
-                # 签名参数不允许为空串
-                ssender.send_with_param(86, item, self.template_id, params, sign=self.sms_sign, extend="", ext="")
-                print("send to:" + item)
-            except HTTPError as e:
-                print(e)
-            except Exception as e:
-                print(e)
+        print("send:"+code)
+        # ssl._create_default_https_context = ssl._create_unverified_context
+        # ssender = SmsSingleSender(self.appid, self.appkey)
+        # # 当模板没有参数时，`params = []`
+        # params = []
+        # if len(code)>4:
+        #     code=code[:4]
+        # params.append(code)
+        # params.append(operation)
+        # print(params)
+        # if phones == None or phones == "":
+        #     phonesTemp = self.default_phone
+        # else:
+        #     phonesTemp = phones.split(",")
+        # for item in phonesTemp:
+        #     try:
+        #         # 签名参数不允许为空串
+        #         ssender.send_with_param(86, item, self.template_id, params, sign=self.sms_sign, extend="", ext="")
+        #         print("send to:" + item)
+        #     except HTTPError as e:
+        #         print(e)
+        #     except Exception as e:
+        #         print(e)
