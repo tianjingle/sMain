@@ -196,7 +196,7 @@ class ChipCalculate:
             choumaList.append(cm)
         if totalVol == 0:
             csdn = 0
-            return choumaList, 0, tmax, csdn,0,0
+            return choumaList, tmax, csdn,0,0
         else:
             csdn = round((totalPrice / totalVol) / 100, 2)
             myUp=1

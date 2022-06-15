@@ -305,11 +305,17 @@ class Core:
 
         # print(self.result)
         if code == 'sh.000001' or stock==False:
+
+            now=self.tencent.getCurrentIndex()
+            tian=[{'date':endDate,'open':now['open'],'high':now['high'],'low':now['low'],'close':now['now'],'volume':now['volume'],'turn':now['turnover']}]
+            print(tian)
+            self.result = self.result.append(tian, ignore_index=True)
             self.result['temp'] = 100
             self.result['open'] = talib.DIV(self.result['open'], self.result['temp'])
             self.result['high'] = talib.DIV(self.result['high'], self.result['temp'])
             self.result['low'] = talib.DIV(self.result['low'], self.result['temp'])
             self.result['close'] = talib.DIV(self.result['close'], self.result['temp'])
+            print(self.result)
 
         self.result = self.result[-self.window:]
         # 计算三十日均线
